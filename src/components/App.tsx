@@ -4,6 +4,7 @@ import Navbar from "./navbar/Navbar";
 import Footer from "./footer/Footer";
 import Profile from "./profile/Profile";
 
+
 function App() {
   return (
     <>

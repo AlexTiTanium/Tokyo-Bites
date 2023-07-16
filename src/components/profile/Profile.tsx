@@ -1,7 +1,40 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+import { useGetUserByIDQuery, useCreateUserMutation, User } from "../../store/services/user";
 
 function Profile() {
+  // Using a query hook automatically fetches data and returns query values
+  const { data, error, isLoading, isFetching } = useGetUserByIDQuery('ourUserID');
+
+  const [user, updateUser] = useState<User>(data ?? {
+    name: 'Unknown Name',
+    address: 'Uknown Adress',
+    phone: 'Uknown Phone'
+  });
+
+  useEffect(() => {
+    if (data) updateUser(data);
+  }, [data]);
+
+  const [
+    createUser, // This is the mutation trigger
+    result, // This is the destructured mutation result
+  ] = useCreateUserMutation()
+
+  console.log(error, data, result);
+
+  const handleChange = ({ target }: React.ChangeEvent<HTMLInputElement>) => {
+    updateUser((prev) => ({
+      ...prev,
+      [target.name]: target.value,
+    }))
+  }
+
+  const handleAddUser = async () => {
+    console.log('_______ create user', user);
+    createUser(user);
+  }
+
   return (
     <div className="profile">
       <img
@@ -17,17 +50,17 @@ function Profile() {
           alt="profile-photo"
         />
         <div>
-          <input type="text" placeholder="Your name" />
+          <input type="text" name="name" onChange={handleChange} value={user.name} placeholder={user.name} />
         </div>
         <div>
-          <input type="text" id="phone" placeholder="Your phone number" />
+          <input type="text" name="phone" id="phone" onChange={handleChange} value={user.phone} placeholder={user?.phone} />
         </div>
         <div>
-          <input type="text" placeholder="Your shipping address" />
+          <input type="text" name="address" onChange={handleChange} value={user.address}  placeholder={user.address}/>
         </div>
         <p className="request">Please fill in all fields</p>
 
-        <button>SAVE</button>
+        <button onClick={handleAddUser}>SAVE</button>
       </div>
       <h1 className="title">Why can you trust us with your data?</h1>
       <ul className="text">
