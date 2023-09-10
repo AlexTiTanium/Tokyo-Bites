@@ -1,20 +1,52 @@
-import { configureStore } from "@reduxjs/toolkit";
-// import userSlice from "./userSlice";
-import { userApi } from "./services/user";
-import { setupListeners } from "@reduxjs/toolkit/dist/query/react";
+import { configureStore, combineReducers } from "@reduxjs/toolkit";
+import {
+  persistStore,
+  persistReducer,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from "redux-persist";
+import storage from "redux-persist/lib/storage";
+import userSlice from "./userSlice";
+import { userApi } from "./api/userApi";
+import { productsApi } from "./api/productsApi";
+import { reviewsApi } from "./api/reviewsApi";
 
-const store = configureStore({
-  reducer: {
-    [userApi.reducerPath]: userApi.reducer,
-  },
-  // Adding the api middleware enables caching, invalidation, polling,
-  // and other useful features of `rtk-query`.
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(userApi.middleware),
+const rootReducer = combineReducers({
+  user: userSlice,
+  [userApi.reducerPath]: userApi.reducer,
+  [productsApi.reducerPath]: productsApi.reducer,
+  [reviewsApi.reducerPath]: reviewsApi.reducer,
 });
 
-// optional, but required for refetchOnFocus/refetchOnReconnect behaviors
-// see `setupListeners` docs - takes an optional callback as the 2nd arg for customization
-setupListeners(store.dispatch);
+const persistConfig = {
+  key: "root",
+  storage,
+  whitelist: ["user"],
+};
+
+const persistedReducer = persistReducer(persistConfig, rootReducer);
+
+const store = configureStore({
+  reducer: persistedReducer,
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+      },
+    }).concat(
+      userApi.middleware,
+      productsApi.middleware,
+      reviewsApi.middleware
+    ),
+});
+
+export const persistor = persistStore(store);
+
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
 
 export default store;

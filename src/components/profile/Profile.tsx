@@ -1,40 +1,46 @@
-import React, { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
-import { useGetUserByIDQuery, useCreateUserMutation, User } from "../../store/services/user";
+import { useState } from "react";
+import { useAddUserMutation } from "../../store/api/userApi";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { setName, setPhone, setAddress } from "../../store/userSlice";
+import loading from "/images/loading.gif";
 
 function Profile() {
-  // Using a query hook automatically fetches data and returns query values
-  const { data, error, isLoading, isFetching } = useGetUserByIDQuery('ourUserID');
+  const user = useAppSelector((state) => state.user.user);
+  const userDispatch = useAppDispatch();
+  const [addUser, { isLoading, isError, isSuccess }] = useAddUserMutation();
+  const [errors, setErrors] = useState<string[]>([]);
 
-  const [user, updateUser] = useState<User>(data ?? {
-    name: 'Unknown Name',
-    address: 'Uknown Adress',
-    phone: 'Uknown Phone'
-  });
-
-  useEffect(() => {
-    if (data) updateUser(data);
-  }, [data]);
-
-  const [
-    createUser, // This is the mutation trigger
-    result, // This is the destructured mutation result
-  ] = useCreateUserMutation()
-
-  console.log(error, data, result);
-
-  const handleChange = ({ target }: React.ChangeEvent<HTMLInputElement>) => {
-    updateUser((prev) => ({
-      ...prev,
-      [target.name]: target.value,
-    }))
-  }
-
-  const handleAddUser = async () => {
-    console.log('_______ create user', user);
-    createUser(user);
-  }
-
+  const handleUpdateUser = async () => {
+    setErrors([]);
+    if (
+      user.name.trim() !== "" &&
+      user.address.trim() !== "" &&
+      user.phone.trim().length >= 10
+    ) {
+      const phoneRegex = /^\+380\d{9}$/;
+      if (phoneRegex.test(user.phone)) {
+        await addUser(user).unwrap();
+        if (isSuccess) {
+          localStorage.setItem("user", JSON.stringify(user));
+        }
+      } else {
+        setErrors((prev) => [
+          ...prev,
+          "The phone number must match the pattern +380ХХХХХХХХХ",
+        ]);
+      }
+    } else {
+      setErrors((prev) => [
+        ...prev,
+        "Please complete all fields: name and address",
+      ]);
+    }
+  };
+  const handleReset = () => {
+    userDispatch(setName(""));
+    userDispatch(setPhone("+380"));
+    userDispatch(setAddress(""));
+  };
   return (
     <div className="profile">
       <img
@@ -50,17 +56,67 @@ function Profile() {
           alt="profile-photo"
         />
         <div>
-          <input type="text" name="name" onChange={handleChange} value={user.name} placeholder={user.name} />
+          <input
+            className={isSuccess === true ? "success" : ""}
+            onChange={(e) => userDispatch(setName(e.target.value))}
+            type="text"
+            placeholder="Your name"
+            value={user.name}
+          />
         </div>
         <div>
-          <input type="text" name="phone" id="phone" onChange={handleChange} value={user.phone} placeholder={user?.phone} />
+          <input
+            className={isSuccess === true ? "success" : ""}
+            onChange={(e) => {
+              userDispatch(setPhone(e.target.value));
+            }}
+            type="phone"
+            placeholder="+380XXXXXXXXX"
+            maxLength={13}
+            value={user.phone}
+            style={{
+              color: user.phone.length > 4 ? "white" : "rgb(119,119,119)",
+              fontSize: "1.20rem",
+            }}
+          />
         </div>
         <div>
-          <input type="text" name="address" onChange={handleChange} value={user.address}  placeholder={user.address}/>
+          <input
+            className={isSuccess === true ? "success" : ""}
+            onChange={(e) => userDispatch(setAddress(e.target.value))}
+            type="text"
+            placeholder="Your shipping address"
+            value={user.address}
+          />
         </div>
-        <p className="request">Please fill in all fields</p>
 
-        <button onClick={handleAddUser}>SAVE</button>
+        {isLoading && (
+          <img src={loading} style={{ width: "2rem", height: "2rem" }} />
+        )}
+        {isSuccess && <p className="success">Success!</p>}
+        {isError && <p className="error">Error! Please try again</p>}
+
+        {errors.length === 0 &&
+          (user.name === "" ||
+            user.phone === "+380" ||
+            user.address === "") && (
+            <p className="error">Please fill in all fields</p>
+          )}
+        {errors.map((error, index) => {
+          return (
+            <p key={index} className="error">
+              {error}
+            </p>
+          );
+        })}
+
+        <button onClick={handleUpdateUser}>SAVE</button>
+        <p
+          onClick={handleReset}
+          style={{ color: "grey", cursor: "pointer", fontSize: "1rem" }}
+        >
+          Reset all data
+        </p>
       </div>
       <h1 className="title">Why can you trust us with your data?</h1>
       <ul className="text">

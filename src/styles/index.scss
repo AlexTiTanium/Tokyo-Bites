@@ -1,4 +1,5 @@
 @import url("../components/navbar/_navbar.scss");
+@import url("../components/navbar/_burger-menu.scss");
 @import url("../components/footer/_footer.scss");
 // about
 @import url("../components/about/_about.scss");
@@ -7,6 +8,12 @@
 @import url("../components/about/feedback/_feedback.scss");
 // profile
 @import url("../components/profile/_profile.scss");
+//menu
+@import url("../components/menu/_menu.scss");
+@import url("../components/menu/_card.scss");
+@import url("../components/menu/_cardInfo.scss");
+//favorite
+@import url("../components/favorite/_favorite.scss");
 
 @font-face {
   font-family: "Ungai";
